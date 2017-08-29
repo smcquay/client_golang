@@ -399,7 +399,7 @@ func (s quantSort) Less(i, j int) bool {
 // (e.g. HTTP request latencies, partitioned by status code and method). Create
 // instances with NewSummaryVec.
 type SummaryVec struct {
-	*metricVec
+	*curriedMetricVec
 }
 
 // NewSummaryVec creates a new SummaryVec based on the provided SummaryOpts and
@@ -412,7 +412,7 @@ func NewSummaryVec(opts SummaryOpts, labelNames []string) *SummaryVec {
 		opts.ConstLabels,
 	)
 	return &SummaryVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		curriedMetricVec: newMetricVec(desc, func(lvs ...string) Metric {
 			return newSummary(desc, opts, lvs...)
 		}),
 	}
@@ -443,7 +443,7 @@ func NewSummaryVec(opts SummaryOpts, labelNames []string) *SummaryVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (v *SummaryVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
-	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := v.curriedMetricVec.getMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -463,7 +463,7 @@ func (v *SummaryVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (v *SummaryVec) GetMetricWith(labels Labels) (Observer, error) {
-	metric, err := v.metricVec.getMetricWith(labels)
+	metric, err := v.curriedMetricVec.getMetricWith(labels)
 	if metric != nil {
 		return metric.(Observer), err
 	}

@@ -20,12 +20,12 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-// metricVec is a Collector to bundle metrics of the same name that differ in
-// their label values. metricVec is not used directly (and therefore
+// curriedMetricVec is a Collector to bundle metrics of the same name that differ in
+// their label values. curriedMetricVec is not used directly (and therefore
 // unexported). It is used as a building block for implementations of vectors of
-// a given metric type, like GaugeVec, CounterVec, SummaryVec, HistogramVec, and
-// UntypedVec.
-type metricVec struct {
+// a given metric type, like GaugeVec, CounterVec, SummaryVec, and HistogramVec.
+// It also handles label currying. It uses basicMetricVec internally.
+type curriedMetricVec struct {
 	mtx      sync.RWMutex // Protects the children.
 	children map[uint64][]metricWithLabelValues
 	desc     *Desc
@@ -36,8 +36,8 @@ type metricVec struct {
 }
 
 // newMetricVec returns an initialized metricVec.
-func newMetricVec(desc *Desc, newMetric func(lvs ...string) Metric) *metricVec {
-	return &metricVec{
+func newMetricVec(desc *Desc, newMetric func(lvs ...string) Metric) *curriedMetricVec {
+	return &curriedMetricVec{
 		children:    map[uint64][]metricWithLabelValues{},
 		desc:        desc,
 		newMetric:   newMetric,
@@ -53,14 +53,14 @@ type metricWithLabelValues struct {
 	metric Metric
 }
 
-// Describe implements Collector. The length of the returned slice
-// is always one.
-func (m *metricVec) Describe(ch chan<- *Desc) {
+// Describe implements Collector. It will send exactly one Desc to the provided
+// channel.
+func (m *curriedMetricVec) Describe(ch chan<- *Desc) {
 	ch <- m.desc
 }
 
 // Collect implements Collector.
-func (m *metricVec) Collect(ch chan<- Metric) {
+func (m *curriedMetricVec) Collect(ch chan<- Metric) {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
 
@@ -71,7 +71,7 @@ func (m *metricVec) Collect(ch chan<- Metric) {
 	}
 }
 
-func (m *metricVec) getMetricWithLabelValues(lvs ...string) (Metric, error) {
+func (m *curriedMetricVec) getMetricWithLabelValues(lvs ...string) (Metric, error) {
 	h, err := m.hashLabelValues(lvs)
 	if err != nil {
 		return nil, err
@@ -80,13 +80,17 @@ func (m *metricVec) getMetricWithLabelValues(lvs ...string) (Metric, error) {
 	return m.getOrCreateMetricWithLabelValues(h, lvs), nil
 }
 
-func (m *metricVec) getMetricWith(labels Labels) (Metric, error) {
+func (m *curriedMetricVec) getMetricWith(labels Labels) (Metric, error) {
 	h, err := m.hashLabels(labels)
 	if err != nil {
 		return nil, err
 	}
 
 	return m.getOrCreateMetricWithLabels(h, labels), nil
+}
+
+func (m *curriedMetricVec) getVecCurriedWith(labels Labels) (*curriedMetricVec, error) {
+	return nil, nil // TODO
 }
 
 // DeleteLabelValues removes the metric where the variable labels are the same
@@ -104,7 +108,7 @@ func (m *metricVec) getMetricWith(labels Labels) (Metric, error) {
 // latter has a much more readable (albeit more verbose) syntax, but it comes
 // with a performance overhead (for creating and processing the Labels map).
 // See also the CounterVec example.
-func (m *metricVec) DeleteLabelValues(lvs ...string) bool {
+func (m *curriedMetricVec) DeleteLabelValues(lvs ...string) bool {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 
@@ -125,7 +129,7 @@ func (m *metricVec) DeleteLabelValues(lvs ...string) bool {
 //
 // This method is used for the same purpose as DeleteLabelValues(...string). See
 // there for pros and cons of the two methods.
-func (m *metricVec) Delete(labels Labels) bool {
+func (m *curriedMetricVec) Delete(labels Labels) bool {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 
@@ -140,7 +144,7 @@ func (m *metricVec) Delete(labels Labels) bool {
 // deleteByHashWithLabelValues removes the metric from the hash bucket h. If
 // there are multiple matches in the bucket, use lvs to select a metric and
 // remove only that metric.
-func (m *metricVec) deleteByHashWithLabelValues(h uint64, lvs []string) bool {
+func (m *curriedMetricVec) deleteByHashWithLabelValues(h uint64, lvs []string) bool {
 	metrics, ok := m.children[h]
 	if !ok {
 		return false
@@ -162,7 +166,7 @@ func (m *metricVec) deleteByHashWithLabelValues(h uint64, lvs []string) bool {
 // deleteByHashWithLabels removes the metric from the hash bucket h. If there
 // are multiple matches in the bucket, use lvs to select a metric and remove
 // only that metric.
-func (m *metricVec) deleteByHashWithLabels(h uint64, labels Labels) bool {
+func (m *curriedMetricVec) deleteByHashWithLabels(h uint64, labels Labels) bool {
 	metrics, ok := m.children[h]
 	if !ok {
 		return false
@@ -181,7 +185,7 @@ func (m *metricVec) deleteByHashWithLabels(h uint64, labels Labels) bool {
 }
 
 // Reset deletes all metrics in this vector.
-func (m *metricVec) Reset() {
+func (m *curriedMetricVec) Reset() {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 
@@ -190,7 +194,7 @@ func (m *metricVec) Reset() {
 	}
 }
 
-func (m *metricVec) hashLabelValues(vals []string) (uint64, error) {
+func (m *curriedMetricVec) hashLabelValues(vals []string) (uint64, error) {
 	if err := validateLabelValues(vals, len(m.desc.variableLabels)); err != nil {
 		return 0, err
 	}
@@ -203,7 +207,7 @@ func (m *metricVec) hashLabelValues(vals []string) (uint64, error) {
 	return h, nil
 }
 
-func (m *metricVec) hashLabels(labels Labels) (uint64, error) {
+func (m *curriedMetricVec) hashLabels(labels Labels) (uint64, error) {
 	if err := validateValuesInLabels(labels, len(m.desc.variableLabels)); err != nil {
 		return 0, err
 	}
@@ -224,7 +228,7 @@ func (m *metricVec) hashLabels(labels Labels) (uint64, error) {
 // or creates it and returns the new one.
 //
 // This function holds the mutex.
-func (m *metricVec) getOrCreateMetricWithLabelValues(hash uint64, lvs []string) Metric {
+func (m *curriedMetricVec) getOrCreateMetricWithLabelValues(hash uint64, lvs []string) Metric {
 	m.mtx.RLock()
 	metric, ok := m.getMetricWithHashAndLabelValues(hash, lvs)
 	m.mtx.RUnlock()
@@ -249,7 +253,7 @@ func (m *metricVec) getOrCreateMetricWithLabelValues(hash uint64, lvs []string) 
 // or creates it and returns the new one.
 //
 // This function holds the mutex.
-func (m *metricVec) getOrCreateMetricWithLabels(hash uint64, labels Labels) Metric {
+func (m *curriedMetricVec) getOrCreateMetricWithLabels(hash uint64, labels Labels) Metric {
 	m.mtx.RLock()
 	metric, ok := m.getMetricWithHashAndLabels(hash, labels)
 	m.mtx.RUnlock()
@@ -270,7 +274,7 @@ func (m *metricVec) getOrCreateMetricWithLabels(hash uint64, labels Labels) Metr
 
 // getMetricWithHashAndLabelValues gets a metric while handling possible
 // collisions in the hash space. Must be called while holding the read mutex.
-func (m *metricVec) getMetricWithHashAndLabelValues(h uint64, lvs []string) (Metric, bool) {
+func (m *curriedMetricVec) getMetricWithHashAndLabelValues(h uint64, lvs []string) (Metric, bool) {
 	metrics, ok := m.children[h]
 	if ok {
 		if i := m.findMetricWithLabelValues(metrics, lvs); i < len(metrics) {
@@ -282,7 +286,7 @@ func (m *metricVec) getMetricWithHashAndLabelValues(h uint64, lvs []string) (Met
 
 // getMetricWithHashAndLabels gets a metric while handling possible collisions in
 // the hash space. Must be called while holding read mutex.
-func (m *metricVec) getMetricWithHashAndLabels(h uint64, labels Labels) (Metric, bool) {
+func (m *curriedMetricVec) getMetricWithHashAndLabels(h uint64, labels Labels) (Metric, bool) {
 	metrics, ok := m.children[h]
 	if ok {
 		if i := m.findMetricWithLabels(metrics, labels); i < len(metrics) {
@@ -294,7 +298,7 @@ func (m *metricVec) getMetricWithHashAndLabels(h uint64, labels Labels) (Metric,
 
 // findMetricWithLabelValues returns the index of the matching metric or
 // len(metrics) if not found.
-func (m *metricVec) findMetricWithLabelValues(metrics []metricWithLabelValues, lvs []string) int {
+func (m *curriedMetricVec) findMetricWithLabelValues(metrics []metricWithLabelValues, lvs []string) int {
 	for i, metric := range metrics {
 		if m.matchLabelValues(metric.values, lvs) {
 			return i
@@ -305,7 +309,7 @@ func (m *metricVec) findMetricWithLabelValues(metrics []metricWithLabelValues, l
 
 // findMetricWithLabels returns the index of the matching metric or len(metrics)
 // if not found.
-func (m *metricVec) findMetricWithLabels(metrics []metricWithLabelValues, labels Labels) int {
+func (m *curriedMetricVec) findMetricWithLabels(metrics []metricWithLabelValues, labels Labels) int {
 	for i, metric := range metrics {
 		if m.matchLabels(metric.values, labels) {
 			return i
@@ -314,7 +318,7 @@ func (m *metricVec) findMetricWithLabels(metrics []metricWithLabelValues, labels
 	return len(metrics)
 }
 
-func (m *metricVec) matchLabelValues(values []string, lvs []string) bool {
+func (m *curriedMetricVec) matchLabelValues(values []string, lvs []string) bool {
 	if len(values) != len(lvs) {
 		return false
 	}
@@ -326,7 +330,7 @@ func (m *metricVec) matchLabelValues(values []string, lvs []string) bool {
 	return true
 }
 
-func (m *metricVec) matchLabels(values []string, labels Labels) bool {
+func (m *curriedMetricVec) matchLabels(values []string, labels Labels) bool {
 	if len(labels) != len(values) {
 		return false
 	}
@@ -338,7 +342,7 @@ func (m *metricVec) matchLabels(values []string, labels Labels) bool {
 	return true
 }
 
-func (m *metricVec) extractLabelValues(labels Labels) []string {
+func (m *curriedMetricVec) extractLabelValues(labels Labels) []string {
 	labelValues := make([]string, len(labels))
 	for i, k := range m.desc.variableLabels {
 		labelValues[i] = labels[k]

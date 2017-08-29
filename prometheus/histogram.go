@@ -287,7 +287,7 @@ func (h *histogram) Write(out *dto.Metric) error {
 // (e.g. HTTP request latencies, partitioned by status code and method). Create
 // instances with NewHistogramVec.
 type HistogramVec struct {
-	*metricVec
+	*curriedMetricVec
 }
 
 // NewHistogramVec creates a new HistogramVec based on the provided HistogramOpts and
@@ -300,7 +300,7 @@ func NewHistogramVec(opts HistogramOpts, labelNames []string) *HistogramVec {
 		opts.ConstLabels,
 	)
 	return &HistogramVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		curriedMetricVec: newMetricVec(desc, func(lvs ...string) Metric {
 			return newHistogram(desc, opts, lvs...)
 		}),
 	}
@@ -331,7 +331,7 @@ func NewHistogramVec(opts HistogramOpts, labelNames []string) *HistogramVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (v *HistogramVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
-	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := v.curriedMetricVec.getMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -351,7 +351,7 @@ func (v *HistogramVec) GetMetricWithLabelValues(lvs ...string) (Observer, error)
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (v *HistogramVec) GetMetricWith(labels Labels) (Observer, error) {
-	metric, err := v.metricVec.getMetricWith(labels)
+	metric, err := v.curriedMetricVec.getMetricWith(labels)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -379,6 +379,33 @@ func (v *HistogramVec) With(labels Labels) Observer {
 		panic(err)
 	}
 	return h
+}
+
+// GetVecCurriedWith returns a vector curried with the provided labels, i.e. the
+// returned vector has those labels pre-set for all labeled operations performed
+// on it. The cardinality of the curried vector is reduced accordingly. It is
+// possible to curry a curried vector, but only with labels not yet used for
+// currying before.
+//
+// The metrics contained in the HistogramVec are shared between the curried and
+// uncurried vectors. They are just accessed differently. Curried and uncurried
+// vectors behave identically in terms of collection. Only one must be
+// registered with a given registry (usually the uncurried version). The Reset
+// method deletes all metrics, even if called on a curried vector.
+func (v *HistogramVec) GetVecCurriedWith(labels Labels) (*HistogramVec, error) {
+	vec, err := v.getVecCurriedWith(labels)
+	if vec != nil {
+		return &HistogramVec{vec}, err
+	}
+	return nil, err
+}
+
+func (v *HistogramVec) CurryWith(labels Labels) *HistogramVec {
+	vec, err := v.GetVecCurriedWith(labels)
+	if err != nil {
+		panic(err)
+	}
+	return vec
 }
 
 type constHistogram struct {

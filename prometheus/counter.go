@@ -71,7 +71,7 @@ func (c *counter) Add(v float64) {
 // (e.g. number of HTTP requests, partitioned by response code and
 // method). Create instances with NewCounterVec.
 type CounterVec struct {
-	*metricVec
+	*curriedMetricVec
 }
 
 // NewCounterVec creates a new CounterVec based on the provided CounterOpts and
@@ -84,7 +84,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 		opts.ConstLabels,
 	)
 	return &CounterVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		curriedMetricVec: newMetricVec(desc, func(lvs ...string) Metric {
 			result := &counter{value: value{
 				desc:       desc,
 				valType:    CounterValue,
@@ -120,7 +120,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (v *CounterVec) GetMetricWithLabelValues(lvs ...string) (Counter, error) {
-	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := v.curriedMetricVec.getMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Counter), err
 	}
@@ -140,7 +140,7 @@ func (v *CounterVec) GetMetricWithLabelValues(lvs ...string) (Counter, error) {
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (v *CounterVec) GetMetricWith(labels Labels) (Counter, error) {
-	metric, err := v.metricVec.getMetricWith(labels)
+	metric, err := v.curriedMetricVec.getMetricWith(labels)
 	if metric != nil {
 		return metric.(Counter), err
 	}

@@ -63,7 +63,7 @@ func NewGauge(opts GaugeOpts) Gauge {
 // (e.g. number of operations queued, partitioned by user and operation
 // type). Create instances with NewGaugeVec.
 type GaugeVec struct {
-	*metricVec
+	*curriedMetricVec
 }
 
 // NewGaugeVec creates a new GaugeVec based on the provided GaugeOpts and
@@ -76,7 +76,7 @@ func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
 		opts.ConstLabels,
 	)
 	return &GaugeVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		curriedMetricVec: newMetricVec(desc, func(lvs ...string) Metric {
 			return newValue(desc, GaugeValue, 0, lvs...)
 		}),
 	}
@@ -106,7 +106,7 @@ func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
 // latter has a much more readable (albeit more verbose) syntax, but it comes
 // with a performance overhead (for creating and processing the Labels map).
 func (v *GaugeVec) GetMetricWithLabelValues(lvs ...string) (Gauge, error) {
-	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := v.curriedMetricVec.getMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Gauge), err
 	}
@@ -126,7 +126,7 @@ func (v *GaugeVec) GetMetricWithLabelValues(lvs ...string) (Gauge, error) {
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (v *GaugeVec) GetMetricWith(labels Labels) (Gauge, error) {
-	metric, err := v.metricVec.getMetricWith(labels)
+	metric, err := v.curriedMetricVec.getMetricWith(labels)
 	if metric != nil {
 		return metric.(Gauge), err
 	}
