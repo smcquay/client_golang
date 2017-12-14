@@ -246,7 +246,7 @@ func newSummary(desc *Desc, opts SummaryOpts, labelValues ...string) Summary {
 }
 
 type summary struct {
-	selfCollector
+	SelfCollector
 
 	bufMtx sync.Mutex // Protects hotBuf and hotBufExpTime.
 	mtx    sync.Mutex // Protects every other moving part.

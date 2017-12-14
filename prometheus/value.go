@@ -46,7 +46,7 @@ type value struct {
 	// operations.  http://golang.org/pkg/sync/atomic/#pkg-note-BUG
 	valBits uint64
 
-	selfCollector
+	SelfCollector
 
 	desc       *Desc
 	valType    ValueType
@@ -115,7 +115,7 @@ func (v *value) Write(out *dto.Metric) error {
 // library to back the implementations of CounterFunc, GaugeFunc, and
 // UntypedFunc.
 type valueFunc struct {
-	selfCollector
+	SelfCollector
 
 	desc       *Desc
 	valType    ValueType

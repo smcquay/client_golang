@@ -50,26 +50,26 @@ type Collector interface {
 	Collect(chan<- Metric)
 }
 
-// selfCollector implements Collector for a single Metric so that the Metric
+// SelfCollector implements Collector for a single Metric so that the Metric
 // collects itself. Add it as an anonymous field to a struct that implements
 // Metric, and call init with the Metric itself as an argument.
-type selfCollector struct {
+type SelfCollector struct {
 	self Metric
 }
 
-// init provides the selfCollector with a reference to the metric it is supposed
+// init provides the SelfCollector with a reference to the metric it is supposed
 // to collect. It is usually called within the factory function to create a
 // metric. See example.
-func (c *selfCollector) init(self Metric) {
+func (c *SelfCollector) init(self Metric) {
 	c.self = self
 }
 
 // Describe implements Collector.
-func (c *selfCollector) Describe(ch chan<- *Desc) {
+func (c *SelfCollector) Describe(ch chan<- *Desc) {
 	ch <- c.self.Desc()
 }
 
 // Collect implements Collector.
-func (c *selfCollector) Collect(ch chan<- Metric) {
+func (c *SelfCollector) Collect(ch chan<- Metric) {
 	ch <- c.self
 }

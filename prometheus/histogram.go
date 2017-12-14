@@ -222,7 +222,7 @@ type histogram struct {
 	sumBits uint64
 	count   uint64
 
-	selfCollector
+	SelfCollector
 	// Note that there is no mutex required.
 
 	desc *Desc
