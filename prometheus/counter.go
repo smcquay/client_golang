@@ -88,7 +88,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 			result := &counter{value: value{
 				desc:       desc,
 				valType:    CounterValue,
-				labelPairs: makeLabelPairs(desc, lvs),
+				labelPairs: MakeLabelPairs(desc, lvs),
 			}}
 			result.init(result) // Init self-collection.
 			return result

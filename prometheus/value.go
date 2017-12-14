@@ -64,7 +64,7 @@ func newValue(desc *Desc, valueType ValueType, val float64, labelValues ...strin
 		desc:       desc,
 		valType:    valueType,
 		valBits:    math.Float64bits(val),
-		labelPairs: makeLabelPairs(desc, labelValues),
+		labelPairs: MakeLabelPairs(desc, labelValues),
 	}
 	result.init(result)
 	return result
@@ -134,7 +134,7 @@ func newValueFunc(desc *Desc, valueType ValueType, function func() float64) *val
 		desc:       desc,
 		valType:    valueType,
 		function:   function,
-		labelPairs: makeLabelPairs(desc, nil),
+		labelPairs: MakeLabelPairs(desc, nil),
 	}
 	result.init(result)
 	return result
@@ -162,7 +162,7 @@ func NewConstMetric(desc *Desc, valueType ValueType, value float64, labelValues 
 		desc:       desc,
 		valType:    valueType,
 		val:        value,
-		labelPairs: makeLabelPairs(desc, labelValues),
+		labelPairs: MakeLabelPairs(desc, labelValues),
 	}, nil
 }
 
@@ -211,7 +211,7 @@ func populateMetric(
 	return nil
 }
 
-func makeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
+func MakeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
 	totalLen := len(desc.variableLabels) + len(desc.constLabelPairs)
 	if totalLen == 0 {
 		// Super fast path.

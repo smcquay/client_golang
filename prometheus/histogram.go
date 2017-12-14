@@ -190,7 +190,7 @@ func newHistogram(desc *Desc, opts HistogramOpts, labelValues ...string) Histogr
 	h := &histogram{
 		desc:        desc,
 		upperBounds: opts.Buckets,
-		labelPairs:  makeLabelPairs(desc, labelValues),
+		labelPairs:  MakeLabelPairs(desc, labelValues),
 	}
 	for i, upperBound := range h.upperBounds {
 		if i < len(h.upperBounds)-1 {
@@ -438,7 +438,7 @@ func NewConstHistogram(
 		count:      count,
 		sum:        sum,
 		buckets:    buckets,
-		labelPairs: makeLabelPairs(desc, labelValues),
+		labelPairs: MakeLabelPairs(desc, labelValues),
 	}, nil
 }
 

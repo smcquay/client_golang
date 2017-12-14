@@ -222,7 +222,7 @@ func newSummary(desc *Desc, opts SummaryOpts, labelValues ...string) Summary {
 		objectives:       opts.Objectives,
 		sortedObjectives: make([]float64, 0, len(opts.Objectives)),
 
-		labelPairs: makeLabelPairs(desc, labelValues),
+		labelPairs: MakeLabelPairs(desc, labelValues),
 
 		hotBuf:         make([]float64, 0, opts.BufCap),
 		coldBuf:        make([]float64, 0, opts.BufCap),
@@ -556,7 +556,7 @@ func NewConstSummary(
 		count:      count,
 		sum:        sum,
 		quantiles:  quantiles,
-		labelPairs: makeLabelPairs(desc, labelValues),
+		labelPairs: MakeLabelPairs(desc, labelValues),
 	}, nil
 }
 
