@@ -36,7 +36,7 @@ import (
 
 func testHandler(t testing.TB) {
 
-	metricVec := prometheus.NewCounterVec(
+	MetricVec := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name:        "name",
 			Help:        "docstring",
@@ -45,8 +45,8 @@ func testHandler(t testing.TB) {
 		[]string{"labelname"},
 	)
 
-	metricVec.WithLabelValues("val1").Inc()
-	metricVec.WithLabelValues("val2").Inc()
+	MetricVec.WithLabelValues("val1").Inc()
+	MetricVec.WithLabelValues("val2").Inc()
 
 	externalMetricFamily := &dto.MetricFamily{
 		Name: proto.String("externalname"),
@@ -302,7 +302,7 @@ collected metric's label constname is not utf8: "\xff"
 				},
 				body: expectedMetricFamilyAsText,
 			},
-			collector: metricVec,
+			collector: MetricVec,
 		},
 		{ // 5
 			headers: map[string]string{
@@ -314,7 +314,7 @@ collected metric's label constname is not utf8: "\xff"
 				},
 				body: expectedMetricFamilyAsBytes,
 			},
-			collector: metricVec,
+			collector: MetricVec,
 		},
 		{ // 6
 			headers: map[string]string{
@@ -356,7 +356,7 @@ collected metric's label constname is not utf8: "\xff"
 					[]byte{},
 				),
 			},
-			collector:  metricVec,
+			collector:  MetricVec,
 			externalMF: []*dto.MetricFamily{externalMetricFamily},
 		},
 		{ // 9
@@ -380,7 +380,7 @@ collected metric's label constname is not utf8: "\xff"
 				},
 				body: expectedMetricFamilyAsText,
 			},
-			collector: metricVec,
+			collector: MetricVec,
 		},
 		{ // 11
 			headers: map[string]string{
@@ -398,7 +398,7 @@ collected metric's label constname is not utf8: "\xff"
 					[]byte{},
 				),
 			},
-			collector:  metricVec,
+			collector:  MetricVec,
 			externalMF: []*dto.MetricFamily{externalMetricFamily},
 		},
 		{ // 12
@@ -417,7 +417,7 @@ collected metric's label constname is not utf8: "\xff"
 					[]byte{},
 				),
 			},
-			collector:  metricVec,
+			collector:  MetricVec,
 			externalMF: []*dto.MetricFamily{externalMetricFamily},
 		},
 		{ // 13
@@ -436,7 +436,7 @@ collected metric's label constname is not utf8: "\xff"
 					[]byte{},
 				),
 			},
-			collector:  metricVec,
+			collector:  MetricVec,
 			externalMF: []*dto.MetricFamily{externalMetricFamily},
 		},
 		{ // 14
@@ -455,7 +455,7 @@ collected metric's label constname is not utf8: "\xff"
 					[]byte{},
 				),
 			},
-			collector:  metricVec,
+			collector:  MetricVec,
 			externalMF: []*dto.MetricFamily{externalMetricFamily},
 		},
 		{ // 15
@@ -474,7 +474,7 @@ collected metric's label constname is not utf8: "\xff"
 					[]byte{},
 				),
 			},
-			collector: metricVec,
+			collector: MetricVec,
 			externalMF: []*dto.MetricFamily{
 				externalMetricFamily,
 				externalMetricFamilyWithSameName,
@@ -490,7 +490,7 @@ collected metric's label constname is not utf8: "\xff"
 				},
 				body: expectedMetricFamilyInvalidLabelValueAsText,
 			},
-			collector: metricVec,
+			collector: MetricVec,
 			externalMF: []*dto.MetricFamily{
 				externalMetricFamily,
 				externalMetricFamilyWithInvalidLabelValue,

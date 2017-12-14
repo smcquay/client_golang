@@ -287,7 +287,7 @@ func (h *histogram) Write(out *dto.Metric) error {
 // (e.g. HTTP request latencies, partitioned by status code and method). Create
 // instances with NewHistogramVec.
 type HistogramVec struct {
-	*metricVec
+	*MetricVec
 }
 
 // NewHistogramVec creates a new HistogramVec based on the provided HistogramOpts and
@@ -300,7 +300,7 @@ func NewHistogramVec(opts HistogramOpts, labelNames []string) *HistogramVec {
 		opts.ConstLabels,
 	)
 	return &HistogramVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
 			return newHistogram(desc, opts, lvs...)
 		}),
 	}
@@ -331,7 +331,7 @@ func NewHistogramVec(opts HistogramOpts, labelNames []string) *HistogramVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (m *HistogramVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
-	metric, err := m.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := m.MetricVec.getMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -351,7 +351,7 @@ func (m *HistogramVec) GetMetricWithLabelValues(lvs ...string) (Observer, error)
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (m *HistogramVec) GetMetricWith(labels Labels) (Observer, error) {
-	metric, err := m.metricVec.getMetricWith(labels)
+	metric, err := m.MetricVec.getMetricWith(labels)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -363,14 +363,14 @@ func (m *HistogramVec) GetMetricWith(labels Labels) (Observer, error) {
 // error, WithLabelValues allows shortcuts like
 //     myVec.WithLabelValues("404", "GET").Observe(42.21)
 func (m *HistogramVec) WithLabelValues(lvs ...string) Observer {
-	return m.metricVec.withLabelValues(lvs...).(Observer)
+	return m.MetricVec.withLabelValues(lvs...).(Observer)
 }
 
 // With works as GetMetricWith, but panics where GetMetricWithLabels would have
 // returned an error. By not returning an error, With allows shortcuts like
 //     myVec.With(Labels{"code": "404", "method": "GET"}).Observe(42.21)
 func (m *HistogramVec) With(labels Labels) Observer {
-	return m.metricVec.with(labels).(Observer)
+	return m.MetricVec.with(labels).(Observer)
 }
 
 type constHistogram struct {

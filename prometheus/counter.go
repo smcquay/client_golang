@@ -71,7 +71,7 @@ func (c *counter) Add(v float64) {
 // (e.g. number of HTTP requests, partitioned by response code and
 // method). Create instances with NewCounterVec.
 type CounterVec struct {
-	*metricVec
+	*MetricVec
 }
 
 // NewCounterVec creates a new CounterVec based on the provided CounterOpts and
@@ -84,7 +84,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 		opts.ConstLabels,
 	)
 	return &CounterVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
 			result := &counter{value: value{
 				desc:       desc,
 				valType:    CounterValue,
@@ -120,7 +120,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (m *CounterVec) GetMetricWithLabelValues(lvs ...string) (Counter, error) {
-	metric, err := m.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := m.MetricVec.getMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Counter), err
 	}
@@ -140,7 +140,7 @@ func (m *CounterVec) GetMetricWithLabelValues(lvs ...string) (Counter, error) {
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (m *CounterVec) GetMetricWith(labels Labels) (Counter, error) {
-	metric, err := m.metricVec.getMetricWith(labels)
+	metric, err := m.MetricVec.getMetricWith(labels)
 	if metric != nil {
 		return metric.(Counter), err
 	}
@@ -152,14 +152,14 @@ func (m *CounterVec) GetMetricWith(labels Labels) (Counter, error) {
 // error, WithLabelValues allows shortcuts like
 //     myVec.WithLabelValues("404", "GET").Add(42)
 func (m *CounterVec) WithLabelValues(lvs ...string) Counter {
-	return m.metricVec.withLabelValues(lvs...).(Counter)
+	return m.MetricVec.withLabelValues(lvs...).(Counter)
 }
 
 // With works as GetMetricWith, but panics where GetMetricWithLabels would have
 // returned an error. By not returning an error, With allows shortcuts like
 //     myVec.With(Labels{"code": "404", "method": "GET"}).Add(42)
 func (m *CounterVec) With(labels Labels) Counter {
-	return m.metricVec.with(labels).(Counter)
+	return m.MetricVec.with(labels).(Counter)
 }
 
 // CounterFunc is a Counter whose value is determined at collect time by calling a

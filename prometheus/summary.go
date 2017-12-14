@@ -404,7 +404,7 @@ func (s quantSort) Less(i, j int) bool {
 // (e.g. HTTP request latencies, partitioned by status code and method). Create
 // instances with NewSummaryVec.
 type SummaryVec struct {
-	*metricVec
+	*MetricVec
 }
 
 // NewSummaryVec creates a new SummaryVec based on the provided SummaryOpts and
@@ -417,7 +417,7 @@ func NewSummaryVec(opts SummaryOpts, labelNames []string) *SummaryVec {
 		opts.ConstLabels,
 	)
 	return &SummaryVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
 			return newSummary(desc, opts, lvs...)
 		}),
 	}
@@ -448,7 +448,7 @@ func NewSummaryVec(opts SummaryOpts, labelNames []string) *SummaryVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (m *SummaryVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
-	metric, err := m.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := m.MetricVec.getMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -468,7 +468,7 @@ func (m *SummaryVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (m *SummaryVec) GetMetricWith(labels Labels) (Observer, error) {
-	metric, err := m.metricVec.getMetricWith(labels)
+	metric, err := m.MetricVec.getMetricWith(labels)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -480,14 +480,14 @@ func (m *SummaryVec) GetMetricWith(labels Labels) (Observer, error) {
 // error, WithLabelValues allows shortcuts like
 //     myVec.WithLabelValues("404", "GET").Observe(42.21)
 func (m *SummaryVec) WithLabelValues(lvs ...string) Observer {
-	return m.metricVec.withLabelValues(lvs...).(Observer)
+	return m.MetricVec.withLabelValues(lvs...).(Observer)
 }
 
 // With works as GetMetricWith, but panics where GetMetricWithLabels would have
 // returned an error. By not returning an error, With allows shortcuts like
 //     myVec.With(Labels{"code": "404", "method": "GET"}).Observe(42.21)
 func (m *SummaryVec) With(labels Labels) Observer {
-	return m.metricVec.with(labels).(Observer)
+	return m.MetricVec.with(labels).(Observer)
 }
 
 type constSummary struct {

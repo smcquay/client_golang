@@ -63,7 +63,7 @@ func NewGauge(opts GaugeOpts) Gauge {
 // (e.g. number of operations queued, partitioned by user and operation
 // type). Create instances with NewGaugeVec.
 type GaugeVec struct {
-	*metricVec
+	*MetricVec
 }
 
 // NewGaugeVec creates a new GaugeVec based on the provided GaugeOpts and
@@ -76,7 +76,7 @@ func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
 		opts.ConstLabels,
 	)
 	return &GaugeVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
 			return newValue(desc, GaugeValue, 0, lvs...)
 		}),
 	}
@@ -106,7 +106,7 @@ func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
 // latter has a much more readable (albeit more verbose) syntax, but it comes
 // with a performance overhead (for creating and processing the Labels map).
 func (m *GaugeVec) GetMetricWithLabelValues(lvs ...string) (Gauge, error) {
-	metric, err := m.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := m.MetricVec.getMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Gauge), err
 	}
@@ -126,7 +126,7 @@ func (m *GaugeVec) GetMetricWithLabelValues(lvs ...string) (Gauge, error) {
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (m *GaugeVec) GetMetricWith(labels Labels) (Gauge, error) {
-	metric, err := m.metricVec.getMetricWith(labels)
+	metric, err := m.MetricVec.getMetricWith(labels)
 	if metric != nil {
 		return metric.(Gauge), err
 	}
@@ -138,14 +138,14 @@ func (m *GaugeVec) GetMetricWith(labels Labels) (Gauge, error) {
 // error, WithLabelValues allows shortcuts like
 //     myVec.WithLabelValues("404", "GET").Add(42)
 func (m *GaugeVec) WithLabelValues(lvs ...string) Gauge {
-	return m.metricVec.withLabelValues(lvs...).(Gauge)
+	return m.MetricVec.withLabelValues(lvs...).(Gauge)
 }
 
 // With works as GetMetricWith, but panics where GetMetricWithLabels would have
 // returned an error. By not returning an error, With allows shortcuts like
 //     myVec.With(Labels{"code": "404", "method": "GET"}).Add(42)
 func (m *GaugeVec) With(labels Labels) Gauge {
-	return m.metricVec.with(labels).(Gauge)
+	return m.MetricVec.with(labels).(Gauge)
 }
 
 // GaugeFunc is a Gauge whose value is determined at collect time by calling a
