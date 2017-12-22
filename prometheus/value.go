@@ -41,18 +41,22 @@ const (
 // ValueType. This is a low-level building block used by the library to back the
 // implementations of Counter, Gauge, and Untyped.
 type value struct {
-	// valBits contains the bits of the represented float64 value. It has
-	// to go first in the struct to guarantee alignment for atomic
-	// operations.  http://golang.org/pkg/sync/atomic/#pkg-note-BUG
-	valBits uint64
-	// valInt is used to store values that are exact integers
-	valInt int64
+	s atomic.Value
 
 	selfCollector
 
 	desc       *Desc
 	valType    ValueType
 	labelPairs []*dto.LabelPair
+}
+
+type valueStore struct {
+	// valBits contains the bits of the represented float64 value. It has
+	// to go first in the struct to guarantee alignment for atomic
+	// operations.  http://golang.org/pkg/sync/atomic/#pkg-note-BUG
+	valBits uint64
+	// valInt is used to store values that are exact integers
+	valInt int64
 }
 
 // newValue returns a newly allocated value with the given Desc, ValueType,
@@ -65,9 +69,11 @@ func newValue(desc *Desc, valueType ValueType, val float64, labelValues ...strin
 	result := &value{
 		desc:       desc,
 		valType:    valueType,
-		valBits:    math.Float64bits(val),
 		labelPairs: makeLabelPairs(desc, labelValues),
 	}
+	result.s.Store(&valueStore{
+		valBits: math.Float64bits(val),
+	})
 	result.init(result)
 	return result
 }
@@ -77,7 +83,10 @@ func (v *value) Desc() *Desc {
 }
 
 func (v *value) Set(val float64) {
-	atomic.StoreUint64(&v.valBits, math.Float64bits(val))
+	newV := valueStore{
+		valBits: math.Float64bits(val),
+	}
+	v.s.Store(&newV)
 }
 
 func (v *value) SetToCurrentTime() {
@@ -86,7 +95,11 @@ func (v *value) SetToCurrentTime() {
 
 // add adjusts the underlying int64
 func (v *value) add(delta int64) {
-	atomic.AddInt64(&v.valInt, delta)
+	if n := v.s.Load(); n == nil {
+		v.Set(float64(delta))
+	} else {
+		atomic.AddInt64(&n.(*valueStore).valInt, delta)
+	}
 }
 
 func (v *value) Inc() {
@@ -104,11 +117,16 @@ func (v *value) Add(val float64) {
 		return
 	}
 
-	for {
-		oldBits := atomic.LoadUint64(&v.valBits)
-		newBits := math.Float64bits(math.Float64frombits(oldBits) + val)
-		if atomic.CompareAndSwapUint64(&v.valBits, oldBits, newBits) {
-			return
+	if n := v.s.Load(); n == nil {
+		v.Set(val)
+	} else {
+		for {
+			n := n.(*valueStore)
+			oldBits := atomic.LoadUint64(&n.valBits)
+			newBits := math.Float64bits(math.Float64frombits(oldBits) + val)
+			if atomic.CompareAndSwapUint64(&n.valBits, oldBits, newBits) {
+				return
+			}
 		}
 	}
 }
@@ -118,10 +136,15 @@ func (v *value) Sub(val float64) {
 }
 
 func (v *value) Write(out *dto.Metric) error {
-	fval := math.Float64frombits(atomic.LoadUint64(&v.valBits))
-	ival := atomic.LoadInt64(&v.valInt)
-	val := fval + float64(ival)
+	var val float64
+	if n := v.s.Load(); n == nil {
 
+	} else {
+		nn := n.(*valueStore)
+		fval := math.Float64frombits(atomic.LoadUint64(&nn.valBits))
+		ival := atomic.LoadInt64(&nn.valInt)
+		val = fval + float64(ival)
+	}
 	return populateMetric(v.valType, val, v.labelPairs, out)
 }
 
