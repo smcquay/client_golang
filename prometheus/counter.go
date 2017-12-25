@@ -50,6 +50,7 @@ func NewCounter(opts CounterOpts) Counter {
 		opts.ConstLabels,
 	)
 	result := &counter{value: value{desc: desc, valType: CounterValue, labelPairs: desc.constLabelPairs}}
+	result.value.Set(0)
 	result.init(result) // Init self-collection.
 	return result
 }
@@ -90,6 +91,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 				valType:    CounterValue,
 				labelPairs: makeLabelPairs(desc, lvs),
 			}}
+			result.value.Set(0)
 			result.init(result) // Init self-collection.
 			return result
 		}),

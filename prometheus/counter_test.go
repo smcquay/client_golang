@@ -28,25 +28,25 @@ func TestCounterAdd(t *testing.T) {
 		ConstLabels: Labels{"a": "1", "b": "2"},
 	}).(*counter)
 	counter.Inc()
-	if expected, got := 0.0, math.Float64frombits(counter.valBits); expected != got {
+	if expected, got := 0.0, math.Float64frombits(counter.s.Load().(*valueStore).valBits); expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
-	if expected, got := int64(1), counter.valInt; expected != got {
+	if expected, got := int64(1), counter.s.Load().(*valueStore).valInt; expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
 	counter.Add(42)
-	if expected, got := 0.0, math.Float64frombits(counter.valBits); expected != got {
+	if expected, got := 0.0, math.Float64frombits(counter.s.Load().(*valueStore).valBits); expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
-	if expected, got := int64(43), counter.valInt; expected != got {
+	if expected, got := int64(43), counter.s.Load().(*valueStore).valInt; expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
 
 	counter.Add(24.42)
-	if expected, got := 24.42, math.Float64frombits(counter.valBits); expected != got {
+	if expected, got := 24.42, math.Float64frombits(counter.s.Load().(*valueStore).valBits); expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
-	if expected, got := int64(43), counter.valInt; expected != got {
+	if expected, got := int64(43), counter.s.Load().(*valueStore).valInt; expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
 
@@ -134,26 +134,26 @@ func TestCounterAddInf(t *testing.T) {
 	}).(*counter)
 
 	counter.Inc()
-	if expected, got := 0.0, math.Float64frombits(counter.valBits); expected != got {
+	if expected, got := 0.0, math.Float64frombits(counter.s.Load().(*valueStore).valBits); expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
-	if expected, got := int64(1), counter.valInt; expected != got {
+	if expected, got := int64(1), counter.s.Load().(*valueStore).valInt; expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
 
 	counter.Add(math.Inf(1))
-	if expected, got := math.Inf(1), math.Float64frombits(counter.valBits); expected != got {
+	if expected, got := math.Inf(1), math.Float64frombits(counter.s.Load().(*valueStore).valBits); expected != got {
 		t.Errorf("valBits expected %f, got %f.", expected, got)
 	}
-	if expected, got := int64(1), counter.valInt; expected != got {
+	if expected, got := int64(1), counter.s.Load().(*valueStore).valInt; expected != got {
 		t.Errorf("valInts expected %d, got %d.", expected, got)
 	}
 
 	counter.Inc()
-	if expected, got := math.Inf(1), math.Float64frombits(counter.valBits); expected != got {
+	if expected, got := math.Inf(1), math.Float64frombits(counter.s.Load().(*valueStore).valBits); expected != got {
 		t.Errorf("Expected %f, got %f.", expected, got)
 	}
-	if expected, got := int64(2), counter.valInt; expected != got {
+	if expected, got := int64(2), counter.s.Load().(*valueStore).valInt; expected != got {
 		t.Errorf("Expected %d, got %d.", expected, got)
 	}
 
@@ -174,10 +174,10 @@ func TestCounterAddLarge(t *testing.T) {
 	// large overflows the underlying type and should therefore be stored in valBits
 	large := float64(math.MaxInt64 + 1)
 	counter.Add(large)
-	if expected, got := large, math.Float64frombits(counter.valBits); expected != got {
+	if expected, got := large, math.Float64frombits(counter.s.Load().(*valueStore).valBits); expected != got {
 		t.Errorf("valBits expected %f, got %f.", expected, got)
 	}
-	if expected, got := int64(0), counter.valInt; expected != got {
+	if expected, got := int64(0), counter.s.Load().(*valueStore).valInt; expected != got {
 		t.Errorf("valInts expected %d, got %d.", expected, got)
 	}
 
@@ -196,10 +196,10 @@ func TestCounterAddSmall(t *testing.T) {
 	}).(*counter)
 	small := 0.000000000001
 	counter.Add(small)
-	if expected, got := small, math.Float64frombits(counter.valBits); expected != got {
+	if expected, got := small, math.Float64frombits(counter.s.Load().(*valueStore).valBits); expected != got {
 		t.Errorf("valBits expected %f, got %f.", expected, got)
 	}
-	if expected, got := int64(0), counter.valInt; expected != got {
+	if expected, got := int64(0), counter.s.Load().(*valueStore).valInt; expected != got {
 		t.Errorf("valInts expected %d, got %d.", expected, got)
 	}
 
